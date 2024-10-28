@@ -22,7 +22,7 @@ def str2bool(v):
 def main():
     parser = argparse.ArgumentParser(
         description=
-        "Rotate a video by a specified angle and optionally compress it using HandBrakeCLI."
+        "Rotate a video by a specified angle and/or compress it using HandBrakeCLI."
     )
     parser.add_argument("-i",
                         "--input",
@@ -32,16 +32,14 @@ def main():
     parser.add_argument("-r",
                         "--rot",
                         type=float,
-                        required=True,
                         help="Rotation angle between 0 and 360 degrees.")
-    parser.add_argument(
-        "-c",
-        "--compress",
-        type=str2bool,
-        nargs='?',
-        const=True,
-        default=True,
-        help="Whether to compress the video after rotation (default: True).")
+    parser.add_argument("-c",
+                        "--compress",
+                        type=str2bool,
+                        nargs='?',
+                        const=True,
+                        default=True,
+                        help="Whether to compress the video (default: True).")
     parser.add_argument(
         "-p",
         "--path",
@@ -58,21 +56,24 @@ def main():
         print(f"Error: Input video file not found at {args.input}.")
         sys.exit(1)
 
-    # Validate rotation angle
-    if not (0 <= args.rot < 360):
-        print("Error: Rotation angle must be between 0 and 360 degrees.")
-        sys.exit(1)
+    # Initialize the final output path
+    final_output_path = args.input
 
-    # Rotate the video
-    print(f"Starting rotation of '{args.input}' by {args.rot} degrees...")
-    rotated_video_path = rotate_video(args.input, args.rot)
+    # Rotate the video if rotation angle is provided
+    if args.rot is not None:
+        if not (0 <= args.rot < 360):
+            print("Error: Rotation angle must be between 0 and 360 degrees.")
+            sys.exit(1)
 
-    # Check if rotation was successful
-    if not os.path.exists(rotated_video_path):
-        print("Error: Video rotation failed.")
-        sys.exit(1)
+        print(f"Starting rotation of '{args.input}' by {args.rot} degrees...")
+        rotated_video_path = rotate_video(args.input, args.rot)
 
-    final_output_path = rotated_video_path  # Initialize final output path
+        # Check if rotation was successful
+        if not os.path.exists(rotated_video_path):
+            print("Error: Video rotation failed.")
+            sys.exit(1)
+
+        final_output_path = rotated_video_path  # Update final output to the rotated video path
 
     # Compress the video if requested
     if args.compress:
@@ -84,19 +85,22 @@ def main():
             sys.exit(1)
 
         # Define the compressed video output path
-        base_name = os.path.splitext(rotated_video_path)[0]
+        base_name = os.path.splitext(final_output_path)[0]
         compressed_output_path = f"{base_name}_compressed.mp4"
 
-        print(f"Starting compression of '{rotated_video_path}'...")
+        print(f"Starting compression of '{final_output_path}'...")
         try:
-            compress_video(input_path=rotated_video_path,
+            compress_video(input_path=final_output_path,
                            output_path=compressed_output_path,
                            handbrake_cli_path=args.path)
             final_output_path = compressed_output_path
 
-            # Remove the intermediate rotated video
-            os.remove(rotated_video_path)
-            print(f"Removed intermediate rotated video: {rotated_video_path}")
+            # Remove the intermediate rotated video if rotation was applied
+            if args.rot is not None:
+                os.remove(rotated_video_path)
+                print(
+                    f"Removed intermediate rotated video: {rotated_video_path}"
+                )
 
         except Exception as e:
             print(f"Error during compression: {e}")
