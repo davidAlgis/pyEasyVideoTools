@@ -27,10 +27,6 @@ def rotate_video(input_path, rotation_angle):
     new_width = int(height * abs_sin + width * abs_cos)
     new_height = int(height * abs_cos + width * abs_sin)
 
-    # Debug: Print new dimensions
-    print(f"Original dimensions: ({width}, {height})")
-    print(f"Rotated dimensions: ({new_width}, {new_height})")
-
     # Define the codec and create VideoWriter object
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     base_name = os.path.splitext(os.path.basename(input_path))[0]
@@ -63,4 +59,4 @@ def rotate_video(input_path, rotation_angle):
     # Release resources
     video.release()
     out.release()
-    print(f"Video processing complete. Saved as {output_path}")
+    return output_path

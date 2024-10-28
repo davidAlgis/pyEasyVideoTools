@@ -1,10 +1,8 @@
 import argparse
 import os
 import sys
-
-# Import the rotate_video and compress_video functions from the existing scripts
 from video_rotate import rotate_video
-from video_compress_handbrake import compress_video, main as compress_main
+from video_compress_handbrake import compress_video
 
 
 def str2bool(v):
@@ -91,10 +89,15 @@ def main():
 
         print(f"Starting compression of '{rotated_video_path}'...")
         try:
-            compress_video(args.input=rotated_video_path,
+            compress_video(input_path=rotated_video_path,
                            output_path=compressed_output_path,
                            handbrake_cli_path=args.path)
             final_output_path = compressed_output_path
+
+            # Remove the intermediate rotated video
+            os.remove(rotated_video_path)
+            print(f"Removed intermediate rotated video: {rotated_video_path}")
+
         except Exception as e:
             print(f"Error during compression: {e}")
             sys.exit(1)
