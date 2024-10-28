@@ -41,12 +41,19 @@ def main():
                         default=True,
                         help="Whether to compress the video (default: True).")
     parser.add_argument(
-        "-p",
-        "--path",
+        "-hb",
+        "--handbrake-path",
         type=str,
         default=r"C:\\Program Files\\HandBrake\\HandBrakeCLI.exe",
         help=
         "Path to the HandBrakeCLI executable (default: 'C:\\Program Files\\HandBrake\\HandBrakeCLI.exe')."
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=str,
+        help=
+        "Path for the final output video. If not specified, a default name based on the input filename will be used."
     )
 
     args = parser.parse_args()
@@ -78,21 +85,25 @@ def main():
     # Compress the video if requested
     if args.compress:
         # Validate HandBrakeCLI path
-        if not os.path.exists(args.path):
+        if not os.path.exists(args.handbrake_path):
             print(
-                f"Error: HandBrakeCLI not found at {args.path}. Please ensure HandBrakeCLI is installed."
+                f"Error: HandBrakeCLI not found at {args.handbrake_path}. Please ensure HandBrakeCLI is installed."
             )
             sys.exit(1)
 
-        # Define the compressed video output path
-        base_name = os.path.splitext(final_output_path)[0]
-        compressed_output_path = f"{base_name}_compressed.mp4"
+        # Define the output path for compression
+        if args.output:
+            compressed_output_path = args.output  # Use user-specified output path
+        else:
+            # Default output path based on transformations
+            base_name = os.path.splitext(final_output_path)[0]
+            compressed_output_path = f"{base_name}_compressed.mp4"
 
         print(f"Starting compression of '{final_output_path}'...")
         try:
             compress_video(input_path=final_output_path,
                            output_path=compressed_output_path,
-                           handbrake_cli_path=args.path)
+                           handbrake_cli_path=args.handbrake_path)
             final_output_path = compressed_output_path
 
             # Remove the intermediate rotated video if rotation was applied
@@ -105,6 +116,10 @@ def main():
         except Exception as e:
             print(f"Error during compression: {e}")
             sys.exit(1)
+    elif args.output:
+        # If compression is not applied but output is specified, rename the rotated video
+        os.rename(final_output_path, args.output)
+        final_output_path = args.output
 
     print(f"Final output saved at: {final_output_path}")
 
